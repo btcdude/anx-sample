@@ -23,7 +23,7 @@ rest_client.dataToken(function(err, json) {
     var private_topic = 'private/'+uuid;
 
     // use token to get streaming connection
-    var server = io.connect('http://dev.anxpro.com',{query: "token="+token,resource: 'streaming/3'});
+    var server = io.connect('https://anxpro.com',{query: "token="+token,resource: 'streaming/3'});
 
     server.on('connect', function() {
 
