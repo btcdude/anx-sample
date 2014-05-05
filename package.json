@@ -1,0 +1,24 @@
+{
+  "name": "anx-sample",
+  "version": "0.0.1",
+  "description": "Sample accessing ANX streaming data",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "anx": "~0.0.3",
+    "socket.io-client": "~0.9.16"
+  },
+  "keywords": [
+    "anx",
+    "streaming",
+    "bitcoin",
+    "litecoin",
+    "dogecoin",
+    "namecoin",
+    "peercoin"
+  ],
+  "author": "",
+  "license": "MIT"
+}
