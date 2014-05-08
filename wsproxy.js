@@ -23,8 +23,8 @@ ioServer.enable('browser client gzip');          // gzip the file
  * Obtains a data token from the cache or from ANX via a rest call and invokes the callback when done
  */
 function doWithRestDataToken(key,secret,callback) {
-    var restClientWrapper = resClientCache[key];
-    if (!restClient) {
+    var restClientWrapper = restClientCache[key];
+    if (!restClientWrapper) {
         var rest_client = new ANX(key, secret, "BTCUSD", "https://test.anxpro.com");
 
         // obtain data key and uuid for private subscriptions
@@ -48,16 +48,17 @@ function doWithRestDataToken(key,secret,callback) {
 }
 
 /**
- * Obtains a new (or cached) client socket connection to the server and when available executes the callback
+ * Obtains a new (or cached) client socket connection to the server and when available executes the callback return client and client's uuid for private subscriptions
  */
 function doWithClientSocket(key,secret,callback) {
     // race condition here - multiple socket connections could happen if requests are fired down before the initial connection is established. should be harmless however
     // all calls should still work as expected
-    var ioClient=clientSocketCache[key];
-    if (!ioClient) {
+    var ioClientWrapper=clientSocketCache[key];
+    if (!ioClientWrapper) {
         // we need to get a data token to establish our per-user connection. as it's an expensive/ roundtrip network operation we cache it
         doWithRestDataToken(key,secret,function(restClientWrapper,err) {
             var token=restClientWrapper.token;
+            var uuid=restClientWrapper.uuid;
             ioClient = io.connect('https://test.anxpro.com', {query: "token=" + token, resource: 'streaming/3'});
             ioClient.onerror(data, error, function (data, error) {
                 console.log("connection error with client socket to ANX for key:"+key);
@@ -66,15 +67,20 @@ function doWithClientSocket(key,secret,callback) {
             });
             ioClient.on('connect', function () {
                 console.log("connected client socket to ANX for key:"+key);
-                clientSocketCache[key] = ioClient; // only add the connection to the cache when it is connected and ready to use
-                callback(ioClient);
+                ioClientWrapper={client:ioClient,uuid:uuid};
+                clientSocketCache[key] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
+                callback(ioClientWrapper);
             });
-            // TODO add reconnect/abort/etc pass through events to calling client in case they care
+            ioClient.on('control',function(data) {
+                // TODO add reconnect/abort/etc pass through events to calling client in case they care
+                console.log("Reconnect instruction received");
+            });
+
             clientSocketCache[key] = ioClient;
         });
     } else {
         //connect client was available in the cache, so use it immediately
-        callback(ioClient);
+        callback(ioClientWrapper);
     }
 }
 
@@ -86,23 +92,24 @@ function doWithClientSocket(key,secret,callback) {
  * TODO: add timeout or close to close down old client connections
  */
 ioServer.on('connection', function (socket) {
-    logger.info('socket.io client connection');
-
-    //subscribe client to control messages which indicate reconnection etc
-    doWithClientSocket(key, secret, function (clientSocket) {
-        clientSocket.on('control',function(data) {
-            socket.emit('control',data);
-        });
-    });
+    console.log('socket.io client connection');
 
     // subscribes this client
     socket.on('subscribe', function (request) {
         var topic = request.topic;
         var secret = request.secret;
         var key = request.key;
-        doWithClientSocket(key, secret, function (clientSocket) {
-            clientSocket.join(topic);
-            clientSocket.on(topic, function (data) {
+        doWithClientSocket(key, secret, function (clientSocketWrapper) {
+            var clientSocket=clientSocket.client;
+            var actualTopic=topic;
+            if (topic=="private") { // simplify handling of private topics by adding uuid logic within this wrapper
+                var uuid = clientSocket.client;
+                actualTopic = "private/" + uuid;
+            }
+            clientSocket.client.join(actualTopic);
+            clientSocket.client.on(actualTopic, function (data) {
+                // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
+                // i.e. "topic" below is not a mistake
                 ioServer.sockets.emit(topic, {
                     key: key,
                     event: data
@@ -114,7 +121,7 @@ ioServer.on('connection', function (socket) {
     // unsubscribes this client
     socket.on('unsubscribe', function (request) {
         doWithClientSocket(key, secret, function (clientSocket) {
-            clientSocket.leave(topic);
+            clientSocket.client.leave(topic);
         });
     });
 

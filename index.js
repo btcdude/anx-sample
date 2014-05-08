@@ -3,13 +3,13 @@
 var ANX = require('anx');
 
 //obtain key and secret by creating an account at anxpro.com
-var key="89b5784c-b6ef-4bc6-bb69-261a2c840ed7";
-var secret="LZVq9sBV04j6ocH0CdWjVfWjIhUSboufmf42z39mx0r4DoHtpVX85iI+Cc3jFbew/+DUH5vtBYt8+t2bMDv25A==";
+var key="fd012755-ed0a-4740-ab16-f8dda02913a7";
+var secret="HpicWK9k/425hqLUF/kluflK5N9rME4xVYYlM7Ux/uJ7UZa1PV1iyeEFovKg6hl/Q59/j00+Fewl0xQMlCh85A==";
 
 // connect to ANX
 // it is possible to override the environment for testing (ANX provides sandbox environments to some partners) (ignore if you are testing against ANX production)
 //var rest_client = new ANX(key,secret,"BTCUSD","http://my-partner-sandbox.anxpro.com");
-var rest_client = new ANX(key,secret,"BTCUSD");
+var rest_client = new ANX(key,secret,"BTCUSD",'https://test.anxpro.com');
 
 // socket.io for streaming support
 var io = require('socket.io-client');
@@ -23,7 +23,7 @@ rest_client.dataToken(function(err, json) {
     var private_topic = 'private/'+uuid;
 
     // use token to get streaming connection
-    var server = io.connect('https://anxpro.com',{query: "token="+token,resource: 'streaming/3'});
+    var server = io.connect('https://test.anxpro.com',{query: "token="+token,resource: 'streaming/3'});
 
     server.on('connect', function() {
 
