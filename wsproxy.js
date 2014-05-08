@@ -10,8 +10,8 @@ var restClientCache = {};
 var topicSubscriptionCache = {};
 
 // create a socket.io topic to listen for incoming ws requests
-var io = require('socket.io');
-var ioServer = io.listen(9990);
+var ioServer = require('socket.io').listen(9990);
+var ioClientLib = require('socket.io-client');
 ioServer.set('log level', 1);
 ioServer.enable('browser client minification');  // send minified client
 ioServer.enable('browser client etag');          // apply etag caching logic based on version number
@@ -35,8 +35,9 @@ function doWithRestDataToken(key,secret,callback) {
                 var token = json.token;
                 var uuid = json.uuid;
                 restClientWrapper = {client: rest_client, token: token, uuid: uuid}; // save wrapper;
+                callback(restClientWrapper); // important to be before addition to cache
                 restClientCache[key] = restClientWrapper;
-                callback(restClientWrapper);
+
             }
         });
     } else {
@@ -57,26 +58,30 @@ function doWithClientSocket(key,secret,callback) {
     if (!ioClientWrapper) {
         // we need to get a data token to establish our per-user connection. as it's an expensive/ roundtrip network operation we cache it
         doWithRestDataToken(key,secret,function(restClientWrapper,err) {
-            var token=restClientWrapper.token;
-            var uuid=restClientWrapper.uuid;
-            ioClient = io.connect('https://test.anxpro.com', {query: "token=" + token, resource: 'streaming/3'});
-            ioClient.onerror(data, error, function (data, error) {
-                console.log("connection error with client socket to ANX for key:"+key);
-                callback(null, error);
-                delete clientSocketCache[key]; // remove broken connection from cache
-            });
-            ioClient.on('connect', function () {
-                console.log("connected client socket to ANX for key:"+key);
-                ioClientWrapper={client:ioClient,uuid:uuid};
-                clientSocketCache[key] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
-                callback(ioClientWrapper);
-            });
-            ioClient.on('control',function(data) {
-                // TODO add reconnect/abort/etc pass through events to calling client in case they care
-                console.log("Reconnect instruction received");
-            });
-
-            clientSocketCache[key] = ioClient;
+            if (err) {
+                console.log("request error for key: "+key);
+                callback(null,err);
+            } else {
+                var token = restClientWrapper.token;
+                var uuid = restClientWrapper.uuid;
+                ioClient = ioClientLib.connect('https://test.anxpro.com', {query: "token=" + token, resource: 'streaming/3'});
+                ioClient.on("error", function (data, error) {
+                    console.log("connection error with client socket to ANX for key:" + key);
+                    callback(null, error);
+                    delete clientSocketCache[key]; // remove broken connection from cache
+                });
+                ioClient.on('connect', function () {
+                    console.log("connected client socket to ANX for key:" + key);
+                    ioClientWrapper = {client: ioClient, uuid: uuid};
+                    callback(ioClientWrapper); // important to be before addition to cache
+                    clientSocketCache[key] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
+                });
+                ioClient.on('control', function (data) {
+                    // TODO add reconnect/abort/etc pass through events to calling client in case they care
+                    ioServer.broadcast("control",data);
+                    console.log("Reconnect instruction received");
+                });
+            }
         });
     } else {
         //connect client was available in the cache, so use it immediately
@@ -99,22 +104,26 @@ ioServer.on('connection', function (socket) {
         var topic = request.topic;
         var secret = request.secret;
         var key = request.key;
-        doWithClientSocket(key, secret, function (clientSocketWrapper) {
-            var clientSocket=clientSocket.client;
-            var actualTopic=topic;
-            if (topic=="private") { // simplify handling of private topics by adding uuid logic within this wrapper
-                var uuid = clientSocket.client;
-                actualTopic = "private/" + uuid;
-            }
-            clientSocket.client.join(actualTopic);
-            clientSocket.client.on(actualTopic, function (data) {
-                // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
-                // i.e. "topic" below is not a mistake
-                ioServer.sockets.emit(topic, {
-                    key: key,
-                    event: data
+        doWithClientSocket(key, secret, function (clientSocketWrapper,err) {
+            if (err) {
+                console.log("subscribe error");
+            } else {
+                var clientSocket = clientSocketWrapper.client;
+                var actualTopic = topic;
+                if (topic == "private") { // simplify handling of private topics by adding uuid logic within this wrapper
+                    var uuid = clientSocketWrapper.uuid;
+                    actualTopic = "private/" + uuid;
+                }
+                clientSocket.emit('subscribe',actualTopic);
+                clientSocket.on(actualTopic, function (data) {
+                    // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
+                    // i.e. "topic" below is not a mistake
+                    ioServer.sockets.emit(topic, {
+                        key: key,
+                        event: data
+                    });
                 });
-            });
+            }
         });
     });
 

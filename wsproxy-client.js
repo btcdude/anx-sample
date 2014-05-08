@@ -5,8 +5,8 @@
 
 
 // suggested to use one key for all public data, and then per-user keys for private data
-var key = "89b5784c-b6ef-4bc6-bb69-261a2c840ed7";
-var secret = "LZVq9sBV04j6ocH0CdWjVfWjIhUSboufmf42z39mx0r4DoHtpVX85iI+Cc3jFbew/+DUH5vtBYt8+t2bMDv25A==";
+var key="fd012755-ed0a-4740-ab16-f8dda02913a7";
+var secret="HpicWK9k/425hqLUF/kluflK5N9rME4xVYYlM7Ux/uJ7UZa1PV1iyeEFovKg6hl/Q59/j00+Fewl0xQMlCh85A==";
 
 // websocket client for streaming support
 var io = require('socket.io-client');
@@ -27,22 +27,21 @@ server.on('connect', function () {
     });
 
 
-    // PUBLIC DATA
+//    // PUBLIC DATA
 
     // subscribe to ticks
     server.emit('subscribe', {secret: secret, key: key, topic: 'public/tick/ANX/BTCUSD'});
     server.on('public/tick/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("tick received:" + JSON.stringify(event, undefined, 2));
+        console.log("tick received:" + JSON.stringify(payload, undefined, 2));
     });
-
     // order book updates for high quality pricing  (single atomic json message for lengthy top of book)
     server.emit('subscribe', {secret: secret, key: key, topic: 'public/orderBook/ANX/BTCUSD'});
     server.on('public/orderBook/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("orderbook update:" + JSON.stringify(event, undefined, 2));
+        console.log("orderbook update:" + JSON.stringify(payload, undefined, 2));
     });
 
     // public trade data (i.e. receive a notification for every trade that is executed
@@ -50,7 +49,7 @@ server.on('connect', function () {
     server.on('public/trades/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("trade event:" + JSON.stringify(event, undefined, 2));
+        console.log("trade event:" + JSON.stringify(payload, undefined, 2));
     });
 
     // PRIVATE DATA
@@ -61,6 +60,6 @@ server.on('connect', function () {
     server.on("private", function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("private event for key: " + key + " received:" + JSON.stringify(data, undefined, 2));
+        console.log("private event for key: " + key + " received:" + JSON.stringify(payload, undefined, 2));
     });
 });
