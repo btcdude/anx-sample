@@ -1,5 +1,6 @@
 //TODO: implement subscription cache and re-subscribe on server ReInit Control Event
 //TODO: period re-connect and re-subscription
+//TODO: replace console.log with some decent winston logging
 // websocket proxy for the ANX restful and streaming API
 // underlying API's docmented at github.com/btcdude/anx and http://docs.anxv2.apiary.io/
 var ANX = require('anx');
@@ -16,48 +17,83 @@ ioServer.enable('browser client minification');  // send minified client
 ioServer.enable('browser client etag');          // apply etag caching logic based on version number
 ioServer.enable('browser client gzip');          // gzip the file
 
-var ioClient = io.connect('https://anxpro.com', {query: "token=" + token, resource: 'streaming/3'});
 
+
+/**
+ * Obtains a data token from the cache or from ANX via a rest call and invokes the callback when done
+ */
 function doWithRestDataToken(key,secret,callback) {
-    var restClientWrapper = restClientCache[key];
+    var restClientWrapper = resClientCache[key];
     if (!restClient) {
         var rest_client = new ANX(key, secret, "BTCUSD", "https://test.anxpro.com");
 
         // obtain data key and uuid for private subscriptions
         rest_client.dataToken(function (err, json) {
             if (err) {
-                throw err;
+                callback(null,err);
+            } else {
+                var token = json.token;
+                var uuid = json.uuid;
+                restClientWrapper = {client: rest_client, token: token, uuid: uuid}; // save wrapper;
+                restClientCache[key] = restClientWrapper;
+                callback(restClientWrapper);
             }
-            var token = json.token;
-            var uuid = json.uuid;
-            restClientCache[key]={client:rest_client,token:token,uuid:uuid}; // save wrapper
-            callback(restClientWrapper);
         });
     } else {
+        // invoke callback immediately with cached wrapper
+        // TODO: add check for age of data token - if > 24 hours get a new one
+        // TODO: also add some kind of a ping for each active rest client to make this happen automagically for extended execution
         callback(restClientWrapper);
     }
 }
 
+/**
+ * Obtains a new (or cached) client socket connection to the server and when available executes the callback
+ */
 function doWithClientSocket(key,secret,callback) {
-
+    // race condition here - multiple socket connections could happen if requests are fired down before the initial connection is established. should be harmless however
+    // all calls should still work as expected
+    var ioClient=clientSocketCache[key];
+    if (!ioClient) {
+        // we need to get a data token to establish our per-user connection. as it's an expensive/ roundtrip network operation we cache it
+        doWithRestDataToken(key,secret,function(restClientWrapper,err) {
+            var token=restClientWrapper.token;
+            ioClient = io.connect('https://test.anxpro.com', {query: "token=" + token, resource: 'streaming/3'});
+            ioClient.onerror(data, error, function (data, error) {
+                console.log("connection error with client socket to ANX for key:"+key);
+                callback(null, error);
+                delete clientSocketCache[key]; // remove broken connection from cache
+            });
+            ioClient.on('connect', function () {
+                console.log("connected client socket to ANX for key:"+key);
+                clientSocketCache[key] = ioClient; // only add the connection to the cache when it is connected and ready to use
+                callback(ioClient);
+            });
+            // TODO add reconnect/abort/etc pass through events to calling client in case they care
+            clientSocketCache[key] = ioClient;
+        });
+    } else {
+        //connect client was available in the cache, so use it immediately
+        callback(ioClient);
+    }
 }
-ioClient.on('connect', function () {
 
-    console.log("connected");
-
-    // CONTROL MESSAGES
-
-    // control message ReInit is sent by the server when it needs to flush all client data including subscriptions. Your client should watch for this message, and restart, or simply re-subscribe
-    ioClient.on('control', function (data) {
-        if (data.event == "ReInit") {
-            console.log("ReInit control message received - clients should re-subscribe to topics or no messages will be received");
-        }
-    });
-});
-
-
+/**
+ * Lists to incoming websocket connections, and proxie's through the request to ANX
+ * Unfortunately the ANX side socket library is not multiplexed for many user accounts.
+ * This library at least allows 1 WS connection to then access multiple cached individual connections to the server.
+ * Everything is NIO on both sides, however it would be best to use unsubscribe
+ * TODO: add timeout or close to close down old client connections
+ */
 ioServer.on('connection', function (socket) {
     logger.info('socket.io client connection');
+
+    //subscribe client to control messages which indicate reconnection etc
+    doWithClientSocket(key, secret, function (clientSocket) {
+        clientSocket.on('control',function(data) {
+            socket.emit('control',data);
+        });
+    });
 
     // subscribes this client
     socket.on('subscribe', function (request) {
@@ -77,76 +113,11 @@ ioServer.on('connection', function (socket) {
 
     // unsubscribes this client
     socket.on('unsubscribe', function (request) {
-        doWithClientSocket(key,secret,function (clientSocket) {
+        doWithClientSocket(key, secret, function (clientSocket) {
             clientSocket.leave(topic);
-    });
-
-});
-
-
-// connect to ANX
-// it is possible to override the environment for testing (ANX provides sandbox environments to some partners) (ignore if you are testing against ANX production)
-//var rest_client = new ANX(key,secret,"BTCUSD","http://my-partner-sandbox.anxpro.com");
-var rest_client = new ANX(key, secret, "BTCUSD");
-
-// socket.io for streaming support
-var io = require('socket.io-client');
-
-// obtain data key and uuid for private subscriptions
-rest_client.dataToken(function (err, json) {
-    if (err) {
-        throw err;
-    }
-
-    var token = json.token;
-    var uuid = json.uuid;
-    var private_topic = 'private/' + uuid;
-
-    // use token to get streaming connection
-    var server = io.connect('https://anxpro.com', {query: "token=" + token, resource: 'streaming/3'});
-
-    server.on('connect', function () {
-
-        console.log("connected");
-
-        // CONTROL MESSAGES
-
-        // control message ReInit is sent by the server when it needs to flush all client data including subscriptions. Your client should watch for this message, and restart, or simply re-subscribe
-        server.on('control', function (data) {
-            if (data.event == "ReInit") {
-                console.log("ReInit control message received - client should re-subscribe to topics or no messages will be recieved");
-            }
-        });
-
-
-        // PUBLIC DATA
-
-        // subscribe to ticks
-        server.emit('subscribe', 'public/tick/ANX/BTCUSD');
-        server.on('public/tick/ANX/BTCUSD', function (data) {
-            console.log("tick received:" + JSON.stringify(data, undefined, 2));
-        });
-
-        // order book updates for high quality pricing  (single atomic json message for lengthy top of book)
-        server.emit('subscribe', 'public/orderBook/ANX/BTCUSD');
-        server.on('public/orderBook/ANX/BTCUSD', function (data) {
-            console.log("orderbook update:" + JSON.stringify(data, undefined, 2));
-        });
-
-        // public trade data (i.e. receive a notification for every trade that is executed
-        server.emit('subscribe', 'public/trades/ANX/BTCUSD');
-        server.on('public/trades/ANX/BTCUSD', function (data) {
-            console.log("trade event:" + JSON.stringify(data, undefined, 2));
-        });
-
-        // PRIVATE DATA
-
-        // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
-        server.emit('subscribe', private_topic);
-        server.on(private_topic, function (data) {
-            console.log("private event received:" + JSON.stringify(data, undefined, 2));
         });
     });
 
+    // TODO: add an explicit close for end of session
 
 });
