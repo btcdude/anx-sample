@@ -101,7 +101,7 @@ ioServer.on('connection', function (socket) {
 
     // subscribes this client
     socket.on('subscribe', function (request) {
-        var topic = request.topic;
+        var topics = request.topics;
         var secret = request.secret;
         var key = request.key;
         doWithClientSocket(key, secret, function (clientSocketWrapper,err) {
@@ -109,28 +109,37 @@ ioServer.on('connection', function (socket) {
                 console.log("subscribe error");
             } else {
                 var clientSocket = clientSocketWrapper.client;
-                var actualTopic = topic;
-                if (topic == "private") { // simplify handling of private topics by adding uuid logic within this wrapper
-                    var uuid = clientSocketWrapper.uuid;
-                    actualTopic = "private/" + uuid;
-                }
-                clientSocket.emit('subscribe',actualTopic);
-                clientSocket.on(actualTopic, function (data) {
-                    // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
-                    // i.e. "topic" below is not a mistake
-                    ioServer.sockets.emit(topic, {
-                        key: key,
-                        event: data
+                for (var i=0;i<topics.length;i++) {
+                    var topic = topics[i];
+                    var actualTopic = topic;
+                    if (topic == "private") { // simplify handling of private topics by adding uuid logic within this wrapper
+                        var uuid = clientSocketWrapper.uuid;
+                        actualTopic = "private/" + uuid;
+                    }
+                    clientSocket.emit('subscribe', actualTopic);
+                    clientSocket.on(actualTopic, function (data) {
+                        // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
+                        // i.e. "topic" below is not a mistake
+                        ioServer.sockets.emit(topic, {
+                            key: key,
+                            event: data
+                        });
                     });
-                });
+                }
             }
         });
     });
 
     // unsubscribes this client
     socket.on('unsubscribe', function (request) {
+        var topics = request.topics;
+        var secret = request.secret;
+        var key = request.key;
         doWithClientSocket(key, secret, function (clientSocket) {
-            clientSocket.client.leave(topic);
+            for (var i=0;i<topics.length;i++) {
+                var topic = topics[i];
+                clientSocket.client.leave(topics);
+            }
         });
     });
 

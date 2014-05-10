@@ -30,14 +30,13 @@ server.on('connect', function () {
 //    // PUBLIC DATA
 
     // subscribe to ticks
-    server.emit('subscribe', {secret: secret, key: key, topic: 'public/tick/ANX/BTCUSD'});
+    server.emit('subscribe', {secret: secret, key: key, topics: ['public/tick/ANX/BTCUSD','public/orderBook/ANX/BTCUSD','public/trades/ANX/BTCUSD']});
     server.on('public/tick/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("tick received:" + JSON.stringify(payload, undefined, 2));
+        console.log("public event received:" + JSON.stringify(payload, undefined, 2));
     });
     // order book updates for high quality pricing  (single atomic json message for lengthy top of book)
-    server.emit('subscribe', {secret: secret, key: key, topic: 'public/orderBook/ANX/BTCUSD'});
     server.on('public/orderBook/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
@@ -45,7 +44,6 @@ server.on('connect', function () {
     });
 
     // public trade data (i.e. receive a notification for every trade that is executed
-    server.emit('subscribe', {secret: secret, key: key, topic: 'public/trades/ANX/BTCUSD'});
     server.on('public/trades/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
@@ -56,7 +54,7 @@ server.on('connect', function () {
 
     // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
     // replace your main key and secret below with per client key and secret
-    server.emit('subscribe', {secret: secret, key: key, topic: "private"});
+    server.emit('subscribe', {secret: secret, key: key, topics: "private"});
     server.on("private", function (data) {
         var key = data.key;
         var payload = data.event;
