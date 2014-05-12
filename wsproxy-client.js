@@ -1,5 +1,5 @@
 /**
- * Example of a client to the multiplexing websocket proxy to ANX. Only use this is you need to use the wsproxy for multiplexing or pure websockets without long polling
+ * Example of a client using the ANX websocket proxy. Only use this is you need to use the wsproxy to use pure websockets, and/or wish multiplexing multiple clients. 
  * Many users will wish to replace this with client language other than javascript
  */
 
@@ -17,16 +17,6 @@ server.on('connect', function () {
 
     console.log("connected"); // suggest you listen for other relevant websocket events
 
-    // CONTROL MESSAGES
-
-    // control message ReInit is sent by the server when it needs to flush all client data including subscriptions. Your client should watch for this message, and restart, or simply re-subscribe
-    server.on('control', function (data) {
-        if (data.event == "ReInit") {
-            console.log("ReInit control message received - client should re-subscribe to topics or no messages will be received");
-        }
-    });
-
-
 //    // PUBLIC DATA
 
     // subscribe to ticks
@@ -34,20 +24,20 @@ server.on('connect', function () {
     server.on('public/tick/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("public event received:" + JSON.stringify(payload, undefined, 2));
+        console.log("public event received:" + JSON.stringify(payload, undefined, 3));
     });
     // order book updates for high quality pricing  (single atomic json message for lengthy top of book)
     server.on('public/orderBook/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("orderbook update:" + JSON.stringify(payload, undefined, 2));
+        console.log("orderbook update:" + JSON.stringify(payload, undefined, 3));
     });
 
     // public trade data (i.e. receive a notification for every trade that is executed
     server.on('public/trades/ANX/BTCUSD', function (data) {
         var key = data.key;
         var payload = data.event;
-        console.log("trade event:" + JSON.stringify(payload, undefined, 2));
+        console.log("trade event:" + JSON.stringify(payload, undefined, 3));
     });
 
     // PRIVATE DATA

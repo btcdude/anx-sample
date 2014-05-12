@@ -3,6 +3,7 @@
 // websocket proxy for the ANX restful and streaming API
 // underlying API's docmented at github.com/btcdude/anx , http://docs.anxv2.apiary.io/ and http://docs/anxv3.apiary.io/
 var ANX = require('anx');
+var host = "https://test.anxpro.com";
 
 var clientSocketCache = {};
 var restClientCache = {};
@@ -25,7 +26,7 @@ function doWithRestDataToken(key,secret,callback) {
     var restClientWrapper = restClientCache[key];
     // if cached client not yet obtained or existing cache client > 20 hours old
     if (!restClientWrapper || (new Date().getTime()-restClientWrapper.timeStamp)>1000*60*60*20) {
-        var rest_client = new ANX(key, secret, "BTCUSD", "https://test.anxpro.com");
+        var rest_client = new ANX(key, secret, "BTCUSD",host);
 
         // obtain data key and uuid for private subscriptions
         rest_client.dataToken(function (err, json) {
@@ -74,12 +75,12 @@ function doWithClientSocket(key,secret,callback) {
                     callback(ioClientWrapper); // important to be before addition to cache
                     clientSocketCache[key] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
                 });
-                server.on('reconnect_failed', function() {
+                ioClient.on('reconnect_failed', function() {
                     console.log("reconnect failed, now disconnected without reconnect.");
                     //TODO: set a timeout to reconnect after some period so after extended outages and re-subscribe to topics
                 });
 
-                server.on('connect_error',function(err) {
+                ioClient.on('connect_error',function(err) {
                     console.log(JSON.stringify(err,null,2));
                 });
 
