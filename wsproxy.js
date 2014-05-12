@@ -63,7 +63,7 @@ function doWithClientSocket(key,secret,callback) {
             } else {
                 var token = restClientWrapper.token;
                 var uuid = restClientWrapper.uuid;
-                ioClient = ioClientLib.connect('https://test.anxpro.com', {query: "token=" + token, resource: 'streaming/3'});
+                ioClient = ioClientLib.connect(host, {query: "token=" + token, resource: 'streaming/3'});
                 ioClient.on("error", function (data, error) {
                     console.log("connection error with client socket to ANX for key:" + key);
                     callback(null, error);
@@ -71,7 +71,7 @@ function doWithClientSocket(key,secret,callback) {
                 });
                 ioClient.on('connect', function () {
                     console.log("connected client socket to ANX for key:" + key);
-                    ioClientWrapper = {client: ioClient, uuid: uuid};
+                    ioClientWrapper = {client: ioClient, uuid: uuid, token: token};
                     callback(ioClientWrapper); // important to be before addition to cache
                     clientSocketCache[key] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
                 });
@@ -119,10 +119,10 @@ ioServer.on('connection', function (socket) {
                     if (topic=='private') topic='private/'+uuid;
                     translatedTopics[i]=topic;
                     //TODO: removing duplicate subscriptions so we don't get duplicates after a reconnect/subscribe
-                    clientSocket.on(actualTopic, function (data) {
+                    clientSocket.on(topic, function (data) {
                         // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
                         // i.e. "topic" below is not a mistake
-                        ioServer.sockets.emit(actual, {
+                        ioServer.sockets.emit(actualTopic, {
                             key: key,
                             event: data
                         });

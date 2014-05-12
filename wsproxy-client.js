@@ -44,7 +44,7 @@ server.on('connect', function () {
 
     // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
     // replace your main key and secret below with per client key and secret
-    server.emit('subscribe', {secret: secret, key: key, topics: "private"});
+    server.emit('subscribe', {secret: secret, key: key, topics: ["private"]});
     server.on("private", function (data) {
         var key = data.key;
         var payload = data.event;
