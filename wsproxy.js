@@ -1,8 +1,7 @@
 //TODO: implement subscription cache and re-subscribe on server ReInit Control Event
-//TODO: period re-connect and re-subscription
 //TODO: replace console.log with some decent winston logging
 // websocket proxy for the ANX restful and streaming API
-// underlying API's docmented at github.com/btcdude/anx and http://docs.anxv2.apiary.io/
+// underlying API's docmented at github.com/btcdude/anx , http://docs.anxv2.apiary.io/ and http://docs/anxv3.apiary.io/
 var ANX = require('anx');
 
 var clientSocketCache = {};
@@ -137,16 +136,22 @@ ioServer.on('connection', function (socket) {
 
     // unsubscribes this client
     socket.on('unsubscribe', function (request) {
-        var topics = request.topics;
-        var secret = request.secret;
-        var key = request.key;
-        doWithClientSocket(key, secret, function (clientSocket) {
-            var token = clientSocketWrapper.token;
-            for (var i=0;i<topics.length;i++) {
-                var topic = topics[i];
-                clientSocket.client.leave(topics);
+           if (err) {
+                console.log("subscribe error");
+            } else {
+                var clientSocket = clientSocketWrapper.client;
+                var token = clientSocketWrapper.token;
+                var translatedTopics=[]; // map requests with a key and "private" to a subscription to "private/uuid";
+                var uuid = clientSocketWrapper.uuid;
+                for (var i=0;i<topics.length;i++) {
+                    var topic = topics[i];
+                    var actualTopic = topic;
+                    if (topic=='private') topic='private/'+uuid;
+                    translatedTopics[i]=topic;
+                }
+                // do the batched topics subscription with the translated topics
+                clientSocket.emit('unsubscribe', {token:token,topics:translatedTopics});
             }
-        });
     });
 
     // TODO: add an explicit close for end of session
