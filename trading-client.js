@@ -9,7 +9,7 @@ var secret = "HpicWK9k/425hqLUF/kluflK5N9rME4xVYYlM7Ux/uJ7UZa1PV1iyeEFovKg6hl/Q5
 // connect to ANX
 // it is possible to override the environment for testing (ANX provides sandbox environments to some partners) (ignore if you are testing against ANX production)
 //var rest_client = new ANX(key,secret,"BTCUSD","http://my-partner-sandbox.anxpro.com");
-var client = new ANX(key, secret, "BTCCNY", 'https://test.mengmengbi.com');
+var client = new ANX(key, secret, "BTCUSD", 'https://test.anxpro.com');
 
 //client.orders(function(err, json) {
 //    if (err) {
@@ -21,7 +21,7 @@ var client = new ANX(key, secret, "BTCCNY", 'https://test.mengmengbi.com');
 //});
 
 client.add("ask", "0.1", null, function(err, json) {
-     if (err) { throw err; }
+     if (err) { throw JSON.stringify(err,null,3); }
      console.log("---------------Add:--------------");
      console.log(json);
 });
