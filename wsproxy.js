@@ -24,7 +24,8 @@ ioServer.enable('browser client gzip');          // gzip the file
  */
 function doWithRestDataToken(key,secret,callback) {
     var restClientWrapper = restClientCache[key];
-    if (!restClientWrapper) {
+    // if cached client not yet obtained or existing cache client > 20 hours old
+    if (!restClientWrapper || (new Date().getTime()-restClientWrapper.timeStamp)>1000*60*60*20) {
         var rest_client = new ANX(key, secret, "BTCUSD", "https://test.anxpro.com");
 
         // obtain data key and uuid for private subscriptions
@@ -34,7 +35,7 @@ function doWithRestDataToken(key,secret,callback) {
             } else {
                 var token = json.token;
                 var uuid = json.uuid;
-                restClientWrapper = {client: rest_client, token: token, uuid: uuid}; // save wrapper;
+                restClientWrapper = {client: rest_client, token: token, uuid: uuid, timeStamp:new Date().getTime()}; // save wrapper;
                 callback(restClientWrapper); // important to be before addition to cache
                 restClientCache[key] = restClientWrapper;
 
@@ -42,8 +43,6 @@ function doWithRestDataToken(key,secret,callback) {
         });
     } else {
         // invoke callback immediately with cached wrapper
-        // TODO: add check for age of data token - if > 24 hours get a new one
-        // TODO: also add some kind of a ping for each active rest client to make this happen automagically for extended execution
         callback(restClientWrapper);
     }
 }
@@ -56,7 +55,7 @@ function doWithClientSocket(key,secret,callback) {
     // all calls should still work as expected
     var ioClientWrapper=clientSocketCache[key];
     if (!ioClientWrapper) {
-        // we need to get a data token to establish our per-user connection. as it's an expensive/ roundtrip network operation we cache it
+        // we need to get a data token to establish our per-user connection. as it's an expensive/ roundtrip request we cache it
         doWithRestDataToken(key,secret,function(restClientWrapper,err) {
             if (err) {
                 console.log("request error for key: "+key);
@@ -76,25 +75,27 @@ function doWithClientSocket(key,secret,callback) {
                     callback(ioClientWrapper); // important to be before addition to cache
                     clientSocketCache[key] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
                 });
-                ioClient.on('control', function (data) {
-                    // TODO add reconnect/abort/etc pass through events to calling client in case they care
-                    ioServer.broadcast("control",data);
-                    console.log("Reconnect instruction received");
+                server.on('reconnect_failed', function() {
+                    console.log("reconnect failed, now disconnected without reconnect.");
+                    //TODO: set a timeout to reconnect after some period so after extended outages and re-subscribe to topics
                 });
+
+                server.on('connect_error',function(err) {
+                    console.log(JSON.stringify(err,null,2));
+                });
+
             }
         });
     } else {
-        //connect client was available in the cache, so use it immediately
+        //connected client was available in the cache, so use it immediately
         callback(ioClientWrapper);
     }
 }
 
 /**
  * Lists to incoming websocket connections, and proxie's through the request to ANX
- * Unfortunately the ANX side socket library is not multiplexed for many user accounts.
- * This library at least allows 1 WS connection to then access multiple cached individual connections to the server.
  * Everything is NIO on both sides, however it would be best to use unsubscribe
- * TODO: add timeout or close to close down old client connections
+ * TODO: add timeout or close to close down old client connections (possibly socket.io cleans them up already)
  */
 ioServer.on('connection', function (socket) {
     console.log('socket.io client connection');
@@ -109,23 +110,27 @@ ioServer.on('connection', function (socket) {
                 console.log("subscribe error");
             } else {
                 var clientSocket = clientSocketWrapper.client;
+                var token = clientSocketWrapper.token;
+                var translatedTopics=[]; // map requests with a key and "private" to a subscription to "private/uuid";
+                var uuid = clientSocketWrapper.uuid;
                 for (var i=0;i<topics.length;i++) {
                     var topic = topics[i];
                     var actualTopic = topic;
-                    if (topic == "private") { // simplify handling of private topics by adding uuid logic within this wrapper
-                        var uuid = clientSocketWrapper.uuid;
-                        actualTopic = "private/" + uuid;
-                    }
-                    clientSocket.emit('subscribe', actualTopic);
+                    if (topic=='private') topic='private/'+uuid;
+                    translatedTopics[i]=topic;
+                    //TODO: removing duplicate subscriptions so we don't get duplicates after a reconnect/subscribe
                     clientSocket.on(actualTopic, function (data) {
                         // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
                         // i.e. "topic" below is not a mistake
-                        ioServer.sockets.emit(topic, {
+                        ioServer.sockets.emit(actual, {
                             key: key,
                             event: data
                         });
                     });
+
                 }
+                // do the batched topics subscription with the translated topics
+                clientSocket.emit('subscribe', {token:token,topics:translatedTopics});
             }
         });
     });
@@ -136,6 +141,7 @@ ioServer.on('connection', function (socket) {
         var secret = request.secret;
         var key = request.key;
         doWithClientSocket(key, secret, function (clientSocket) {
+            var token = clientSocketWrapper.token;
             for (var i=0;i<topics.length;i++) {
                 var topic = topics[i];
                 clientSocket.client.leave(topics);
