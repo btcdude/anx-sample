@@ -7,7 +7,6 @@ var host = "https://test.anxpro.com";
 
 var clientSocketCache = {};
 var restClientCache = {};
-var topicSubscriptionCache = {};
 
 // create a socket.io topic to listen for incoming ws requests
 var ioServer = require('socket.io').listen(9990);
@@ -118,7 +117,9 @@ ioServer.on('connection', function (socket) {
                     var actualTopic = topic;
                     if (topic=='private') topic='private/'+uuid;
                     translatedTopics[i]=topic;
-                    //TODO: removing duplicate subscriptions so we don't get duplicates after a reconnect/subscribe
+
+                    //we remove any existing listeners to prevent a build-up of listeners and dups.
+                    clientSocket.removeAllListeners('topic');
                     clientSocket.on(topic, function (data) {
                         // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
                         // i.e. "topic" below is not a mistake
@@ -152,6 +153,7 @@ ioServer.on('connection', function (socket) {
                 }
                 // do the batched topics subscription with the translated topics
                 clientSocket.emit('unsubscribe', {token:token,topics:translatedTopics});
+                // remove from cache, race condition here
             }
     });
 

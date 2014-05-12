@@ -21,33 +21,39 @@ server.on('connect', function () {
 
     // subscribe to ticks
     server.emit('subscribe', {secret: secret, key: key, topics: ['public/tick/ANX/BTCUSD','public/orderBook/ANX/BTCUSD','public/trades/ANX/BTCUSD']});
-    server.on('public/tick/ANX/BTCUSD', function (data) {
-        var key = data.key;
-        var payload = data.event;
-        console.log("public event received:" + JSON.stringify(payload, undefined, 3));
-    });
-    // order book updates for high quality pricing  (single atomic json message for lengthy top of book)
-    server.on('public/orderBook/ANX/BTCUSD', function (data) {
-        var key = data.key;
-        var payload = data.event;
-        console.log("orderbook update:" + JSON.stringify(payload, undefined, 3));
-    });
-
-    // public trade data (i.e. receive a notification for every trade that is executed
-    server.on('public/trades/ANX/BTCUSD', function (data) {
-        var key = data.key;
-        var payload = data.event;
-        console.log("trade event:" + JSON.stringify(payload, undefined, 3));
-    });
-
-    // PRIVATE DATA
 
     // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
     // replace your main key and secret below with per client key and secret
+    // you could subscribe several times with different keys
     server.emit('subscribe', {secret: secret, key: key, topics: ["private"]});
-    server.on("private", function (data) {
-        var key = data.key;
-        var payload = data.event;
-        console.log("private event for key: " + key + " received:" + JSON.stringify(payload, undefined, 2));
-    });
 });
+
+// note local event registration only done once - whilst subscribing to topics done on connect
+server.on('public/tick/ANX/BTCUSD', function (data) {
+    var key = data.key;
+    var payload = data.event;
+    console.log("public event received:" + JSON.stringify(payload, undefined, 3));
+});
+// order book updates for high quality pricing  (single atomic json message for lengthy top of book)
+server.on('public/orderBook/ANX/BTCUSD', function (data) {
+    var key = data.key;
+    var payload = data.event;
+    console.log("orderbook update:" + JSON.stringify(payload, undefined, 3));
+});
+
+// public trade data (i.e. receive a notification for every trade that is executed
+server.on('public/trades/ANX/BTCUSD', function (data) {
+    var key = data.key;
+    var payload = data.event;
+    console.log("trade event:" + JSON.stringify(payload, undefined, 3));
+});
+
+// PRIVATE DATA
+
+
+server.on("private", function (data) {
+    var key = data.key;
+    var payload = data.event;
+    console.log("private event for key: " + key + " received:" + JSON.stringify(payload, undefined, 2));
+});
+
