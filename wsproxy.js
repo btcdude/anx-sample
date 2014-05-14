@@ -117,13 +117,20 @@ ioServer.on('connection', function (socket) {
                     var actualTopic = topic;
                     if (topic=='private') topic='private/'+uuid;
                     translatedTopics[i]=topic;
-
+                    //add to room to avoid all data going to all websocket clients
+                    var sessionId = socket.id;
+                    var manager = ioServer.sockets.manager;
+                    // avoid dup subscriptions most of the time (this is not synchronized so open to race condition
+                    if (! (manager.roomClients[sessionId])[topic])
+                    {
+                        socket.join(topic);
+                    }
                     //we remove any existing listeners to prevent a build-up of listeners and dups.
-                    clientSocket.removeAllListeners('topic');
+                    clientSocket.removeAllListeners(topic);
                     clientSocket.on(topic, function (data) {
                         // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
                         // i.e. "topic" below is not a mistake
-                        ioServer.sockets.emit(actualTopic, {
+                        ioServer.sockets.in(topic).emit(actualTopic, {
                             key: key,
                             event: data
                         });
@@ -149,6 +156,7 @@ ioServer.on('connection', function (socket) {
                     var topic = topics[i];
                     var actualTopic = topic;
                     if (topic=='private') topic='private/'+uuid;
+                    socket.leave(topic);
                     translatedTopics[i]=topic;
                 }
                 // do the batched topics subscription with the translated topics
