@@ -96,6 +96,16 @@ function doWithClientSocket(key,secret,callback) {
  * Everything is NIO on both sides, however it would be best to use unsubscribe
  * TODO: add timeout or close to close down old client connections (possibly socket.io cleans them up already)
  */
+
+function createEmitCallback(key, topic, actualTopic) {
+    return function(data) {
+        ioServer.sockets.in(topic).emit(actualTopic, {
+            key: key,
+            event: data
+        });
+    }
+}
+
 ioServer.on('connection', function (socket) {
     console.log('socket.io client connection');
 
@@ -117,6 +127,7 @@ ioServer.on('connection', function (socket) {
                     var actualTopic = topic;
                     if (topic=='private') topic='private/'+uuid;
                     translatedTopics[i]=topic;
+
                     //add to room to avoid all data going to all websocket clients
                     var sessionId = socket.id;
                     var manager = ioServer.sockets.manager;
@@ -127,15 +138,7 @@ ioServer.on('connection', function (socket) {
                     }
                     //we remove any existing listeners to prevent a build-up of listeners and dups.
                     clientSocket.removeAllListeners(topic);
-                    clientSocket.on(topic, function (data) {
-                        // we submit the actual topic subscribed - i.e. "private" is private/uuid to ANX - but this just returns "private" and the key so the client doesn't even need to know about client uuid
-                        // i.e. "topic" below is not a mistake
-                        ioServer.sockets.in(topic).emit(actualTopic, {
-                            key: key,
-                            event: data
-                        });
-                    });
-
+                    clientSocket.on(topic, createEmitCallback(key, topic, actualTopic));
                 }
                 // do the batched topics subscription with the translated topics
                 clientSocket.emit('subscribe', {token:token,topics:translatedTopics});
