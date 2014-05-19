@@ -57,7 +57,7 @@ function doWithClientSocket(key,secret,callback) {
         // we need to get a data token to establish our per-user connection. as it's an expensive/ roundtrip request we cache it
         doWithRestDataToken(key,secret,function(restClientWrapper,err) {
             if (err) {
-                console.log("request error for key: "+key);
+                console.log("request error for key: "+key+", error: "+ JSON.stringify(err,null,2));
                 callback(null,err);
             } else {
                 var token = restClientWrapper.token;
@@ -148,8 +148,12 @@ ioServer.on('connection', function (socket) {
 
     // unsubscribes this client
     socket.on('unsubscribe', function (request) {
-           if (err) {
-                console.log("subscribe error");
+        var topics = request.topics;
+        var secret = request.secret;
+        var key = request.key;
+        doWithClientSocket(key, secret, function (clientSocketWrapper,err) {
+            if (err) {
+                console.log("unsubscribe error: "+JSON.stringify(err,null,2) );
             } else {
                 var clientSocket = clientSocketWrapper.client;
                 var token = clientSocketWrapper.token;
@@ -165,7 +169,10 @@ ioServer.on('connection', function (socket) {
                 // do the batched topics subscription with the translated topics
                 clientSocket.emit('unsubscribe', {token:token,topics:translatedTopics});
                 // remove from cache, race condition here
+                console.log("unsubscribe success");
             }
+        });
+
     });
 
     // TODO: add an explicit close for end of session
