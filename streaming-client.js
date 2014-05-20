@@ -33,7 +33,7 @@ rest_client.dataToken(function (err, json) {
         server.emit('subscribe', {token: token, topics: ['public/tick/ANX/BTCUSD', 'public/orderBook/ANX/BTCUSD', 'public/trades/ANX/BTCUSD', 'private/' + uuid]});
 
         // you could have multiple tokens (for different users/api keys) and subscribe for private data within this single socket.io connection
-        //server.emit('subscribe',{token:another_token,topics:['private/'+another_uuid]});
+//        server.emit('subscribe',{token:another_token,topics:['private/'+another_uuid]});
     });
 
     // note we send the "subscribe" requests each time on connect, however we set the local "on" handlers only once.
@@ -52,21 +52,21 @@ rest_client.dataToken(function (err, json) {
         console.log("tick received:" + JSON.stringify(data, undefined, 2));
     });
 
-//    // order book updates for high quality pricing  (single atomic json message for lengthy top of book)
-//    server.on('public/orderBook/ANX/BTCUSD', function (data) {
-//        console.log("orderbook update" + JSON.stringify(data, undefined, 3));
-//    });
-//
-//    // public trade data (i.e. receive a notification for every trade that is executed
-//    server.on('public/trades/ANX/BTCUSD', function (data) {
-//        console.log("trade event:" + JSON.stringify(data, undefined, 2));
-//    });
-//
-//    // PRIVATE DATA
-//
-//    // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
-//    server.on('private/' + uuid, function (data) {
-//        console.log("private event received:" + JSON.stringify(data, undefined, 2));
-//    });
+    // order book updates for high quality pricing  (single atomic json message for lengthy top of book)
+    server.on('public/orderBook/ANX/BTCUSD', function (data) {
+        console.log("orderbook update" + JSON.stringify(data, undefined, 3));
+    });
+
+    // public trade data (i.e. receive a notification for every trade that is executed
+    server.on('public/trades/ANX/BTCUSD', function (data) {
+        console.log("trade event:" + JSON.stringify(data, undefined, 2));
+    });
+
+    // PRIVATE DATA
+
+    // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
+    server.on('private/' + uuid, function (data) {
+        console.log("private event received:" + JSON.stringify(data, undefined, 2));
+    });
 
 });
