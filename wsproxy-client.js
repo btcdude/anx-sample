@@ -5,12 +5,16 @@
 
 
 // suggested to use one key for all public data, and then per-user keys for private data
-var key="fd012755-ed0a-4740-ab16-f8dda02913a7";
-var secret="HpicWK9k/425hqLUF/kluflK5N9rME4xVYYlM7Ux/uJ7UZa1PV1iyeEFovKg6hl/Q59/j00+Fewl0xQMlCh85A==";
+//var key="fd012755-ed0a-4740-ab16-f8dda02913a7";
+//var secret="HpicWK9k/425hqLUF/kluflK5N9rME4xVYYlM7Ux/uJ7UZa1PV1iyeEFovKg6hl/Q59/j00+Fewl0xQMlCh85A==";
 
 // websocket client for streaming support
 var io = require('socket.io-client');
 
+//var proxy = require('socket.io-proxy');
+//proxy.init('http://localhost:8888');
+//
+//var server = proxy.connect('http://localhost:9990');
 var server = io.connect('http://localhost:9990');
 
 server.on('connect', function () {
@@ -20,7 +24,7 @@ server.on('connect', function () {
 //    // PUBLIC DATA
 
     // subscribe to ticks
-    server.emit('subscribe', {secret: secret, key: key, topics: ['public/tick/ANX/BTCUSD','public/orderBook/ANX/BTCUSD','public/trades/ANX/BTCUSD']});
+    server.emit('subscribe', {secret: secret, key: key, topics: ['public/trades/ANX/BTCUSD', 'public/tick/ANX/BTCUSD', 'public/orderBook/ANX/BTCUSD']});
 
     // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
     // replace your main key and secret below with per client key and secret

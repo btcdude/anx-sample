@@ -8,8 +8,9 @@ var secret = "HpicWK9k/425hqLUF/kluflK5N9rME4xVYYlM7Ux/uJ7UZa1PV1iyeEFovKg6hl/Q5
 
 // connect to ANX
 // it is possible to override the environment for testing (ANX provides sandbox environments to some partners) (ignore if you are testing against ANX production)
-//var rest_client = new ANX(key,secret,"BTCUSD","http://my-partner-sandbox.anxpro.com");
-var rest_client = new ANX(key, secret, "BTCUSD", 'https://test.anxpro.com');
+//var host = 'https://test.anxpro.com'  // http://my-partner-sandbox.anxpro.com
+var host = 'https://test.anxpro.com'
+var rest_client = new ANX(key, secret, "BTCUSD", host);
 
 // socket.io for streaming support
 var io = require('socket.io-client');
@@ -24,7 +25,7 @@ rest_client.dataToken(function (err, json) {
     var uuid = json.uuid;
 
     // use token to get streaming connection
-    var server = io.connect('https://test.anxpro.com', {resource: 'streaming/3'});
+    var server = io.connect(host, {resource: 'streaming/3'});
 
     server.on('connect', function () {
         console.log("connected");
@@ -33,7 +34,7 @@ rest_client.dataToken(function (err, json) {
         server.emit('subscribe', {token: token, topics: ['public/tick/ANX/BTCUSD', 'public/orderBook/ANX/BTCUSD', 'public/trades/ANX/BTCUSD', 'private/' + uuid]});
 
         // you could have multiple tokens (for different users/api keys) and subscribe for private data within this single socket.io connection
-//        server.emit('subscribe',{token:another_token,topics:['private/'+another_uuid]});
+        //server.emit('subscribe',{token:another_token,topics:['private/'+another_uuid]});
     });
 
     // note we send the "subscribe" requests each time on connect, however we set the local "on" handlers only once.
