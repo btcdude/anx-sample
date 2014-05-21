@@ -1,7 +1,29 @@
-This example shows how to use the ANX node library to get a data token and connect to the streaming API.
+This example shows how to use the ANX node library:
 
+streaming-example.js
+--------------------
+Shows how to get a data token and connect to the streaming API.
 It uses socket.io and the anx library.
 
-The anx library can be used for many interactions including trading and sending crypto.
+send-example.js
+---------------
+Shows hows how to send crypto.
+The send returns a transaction id if successful.
 
-See: https://github.com/btcdude/anx and http://docs.anxv2.apiary.io/
+The wallet history returns all transactions for the given currency. The transactionid in a given transaction record should match the send above.
+
+trading-example.js
+------------------
+Shows all the various different order methods, and querying the order status given the order id.
+
+wsproxy.js
+----------
+Provides a sample socket.io proxy that exposes a working socket.io over websocket for non node clients that do not support long-polling.
+It also provides convenience methods to multiplex multiple clients, and hides the work required to obtain a data token.
+
+wsproxy-client.js
+-----------------
+Sample client for wsproxy.js.
+
+
+More information is available at: https://github.com/btcdude/anx , http://docs.anxv2.apiary.io/ and http://docs.anxv3.apiary.io/
