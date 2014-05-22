@@ -1,6 +1,6 @@
 // anx restful API for obtaining datatoken 
 // the restful api also supports many functions such as trading and send money - see github.com/btcdude/anx , http://docs.anxv2.apiary.io/ and http://docs.anxv3.apiary.io/
-var ANX = require('../anx/index');
+var ANX = require('anx');
 
 //obtain key and secret by creating an account at anxpro.com (or from your sandbox environment)
 var key = "fd012755-ed0a-4740-ab16-f8dda02913a7";
