@@ -25,5 +25,11 @@ wsproxy-client.js
 -----------------
 Sample client for wsproxy.js.
 
+account-example.js
+------------------
+Shows how to create a sub account for a specified traded currency;
+Shows how to query coin address for a specified sub account for a traded ccy;
+Shows how to create new coin address for a specified sub account for a traded ccy.
+
 
 More information is available at: https://github.com/btcdude/anx , http://docs.anxv2.apiary.io/ and http://docs.anxv3.apiary.io/
