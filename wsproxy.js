@@ -83,6 +83,9 @@ function doWithClientSocket(key,secret,callback) {
                     console.log(JSON.stringify(err,null,2));
                 });
 
+                ioClientWrapper = {client: ioClient, uuid: uuid, token: token};
+                callback(ioClientWrapper);
+
             }
         });
     } else {
