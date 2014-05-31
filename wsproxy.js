@@ -52,7 +52,8 @@ function doWithRestDataToken(key,secret,callback) {
 function doWithClientSocket(key,secret,callback) {
     // race condition here - multiple socket connections could happen if requests are fired down before the initial connection is established. should be harmless however
     // all calls should still work as expected
-    var ioClientWrapper=clientSocketCache[key];
+    var cacheKey='singleton'; // =key to have a connection per user, not advised.
+    var ioClientWrapper=clientSocketCache[cacheKey];
     if (!ioClientWrapper) {
         // we need to get a data token to establish our per-user connection. as it's an expensive/ roundtrip request we cache it
         doWithRestDataToken(key,secret,function(restClientWrapper,err) {
@@ -62,7 +63,7 @@ function doWithClientSocket(key,secret,callback) {
             } else {
                 var token = restClientWrapper.token;
                 var uuid = restClientWrapper.uuid;
-                ioClient = ioClientLib.connect(host, {query: "token=" + token, resource: 'streaming/3'});
+                ioClient = ioClientLib.connect(host, {'force new connection': true,query: "token=" + token, resource: 'streaming/3'});
                 ioClient.on("error", function (data, error) {
                     console.log("connection error with client socket to ANX for key:" + key);
                     callback(null, error);
@@ -72,7 +73,7 @@ function doWithClientSocket(key,secret,callback) {
                     console.log("connected client socket to ANX for key:" + key);
                     ioClientWrapper = {client: ioClient, uuid: uuid, token: token};
                     callback(ioClientWrapper); // important to be before addition to cache
-                    clientSocketCache[key] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
+                    clientSocketCache[cacheKey] = ioClientWrapper; // only add the connection to the cache when it is connected and ready to use
                 });
                 ioClient.on('reconnect_failed', function() {
                     console.log("reconnect failed, now disconnected without reconnect.");

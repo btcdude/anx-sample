@@ -5,8 +5,8 @@
 
 
 // suggested to use one key for all public data, and then per-user keys for private data
-//var key="fd012755-ed0a-4740-ab16-f8dda02913a7";
-//var secret="HpicWK9k/425hqLUF/kluflK5N9rME4xVYYlM7Ux/uJ7UZa1PV1iyeEFovKg6hl/Q59/j00+Fewl0xQMlCh85A==";
+var key="fd012755-ed0a-4740-ab16-f8dda02913a7";
+var secret="SEMdIzSPXjEzOz6aGnHuDIKkTI8VfHr0bd5YFwnJS3xBlLU8n2hb2S5yZCMJOYhCrHbEyEsBccAMxLus6pSiCA==";
 
 // websocket client for streaming support
 var io = require('socket.io-client');
