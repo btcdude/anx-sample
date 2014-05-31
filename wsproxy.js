@@ -62,7 +62,7 @@ function doWithClientSocket(key,secret,callback) {
             } else {
                 var token = restClientWrapper.token;
                 var uuid = restClientWrapper.uuid;
-                ioClient = ioClientLib.connect(host, {query: "token=" + token, resource: 'streaming/3'});
+                var ioClient = ioClientLib.connect(host, {'force new connection': true, query: "token=" + token, resource: 'streaming/3'});
                 ioClient.on("error", function (data, error) {
                     console.log("connection error with client socket to ANX for key:" + key);
                     callback(null, error);
