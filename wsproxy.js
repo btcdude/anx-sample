@@ -16,8 +16,6 @@ ioServer.enable('browser client minification');  // send minified client
 ioServer.enable('browser client etag');          // apply etag caching logic based on version number
 ioServer.enable('browser client gzip');          // gzip the file
 
-
-
 /**
  * Obtains a data token from the cache or from ANX via a rest call and invokes the callback when done
  */
@@ -63,8 +61,8 @@ function doWithClientSocket(key,secret,callback) {
             } else {
                 var token = restClientWrapper.token;
                 var uuid = restClientWrapper.uuid;
-                var ioClient = ioClientLib.connect(host, {'force new connection': true, query: "token=" + token, resource: 'streaming/3'});
-                ioClient.on("error", function (data, error) {
+                var ioClient = ioClientLib.connect(host, {'force new connection': true, query: "token=" + token , resource: 'streaming/3'});
+                ioClient.on("error", function (error) {
                     console.log("connection error with client socket to ANX for key:" + key);
                     callback(null, error);
                     delete clientSocketCache[key]; // remove broken connection from cache
@@ -83,10 +81,6 @@ function doWithClientSocket(key,secret,callback) {
                 ioClient.on('connect_error',function(err) {
                     console.log(JSON.stringify(err,null,2));
                 });
-
-                ioClientWrapper = {client: ioClient, uuid: uuid, token: token};
-                callback(ioClientWrapper);
-
             }
         });
     } else {
