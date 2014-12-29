@@ -3,8 +3,8 @@
 function anx_query($path, array $param = array()) {
 	// API settings
 	
-	$key = '354aba43-0ec3-42c6-9667-335dc2e2efcb';
-	$secret = 'EtrQxjbV6lCxCQRRv7flDS1KB4ec1z7CwKzYuCmudt/as9u18yZh+i0cq62x4Au3fAhnzrDFE8SZWJw8iTpDQA==';
+	$key = '';
+	$secret = '';
 
 	$param['nonce'] = time() * 1000;
 	

@@ -3,8 +3,8 @@
 function anx_query($path, array $param = array()) {
 	// API settings
 	
-	$key = "6c646452-1665-4903-a7b7-005c8f65ab38";
-	$secret = "KqSr5Bp87pUx54bae5VQ5BbB+LNV/enHbyVFZKkhnL7ybweTmFIhWVCnLg40P0LNM8OLGcjQdg+cBqVHr/BXug==";
+	$key = "";
+	$secret = "";
  
 	// generate a nonce as microtime, with as-string handling to avoid problems with 32bits systems
 	//$mt = explode(' ', time());
