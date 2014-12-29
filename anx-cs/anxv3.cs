@@ -12,8 +12,8 @@ using System.Security.Cryptography.X509Certificates;
 public class Test
 {
     static public void Main() {
-        string key = "6c646452-1665-4903-a7b7-005c8f65ab38";
-        string secret = "KqSr5Bp87pUx54bae5VQ5BbB+LNV/enHbyVFZKkhnL7ybweTmFIhWVCnLg40P0LNM8OLGcjQdg+cBqVHr/BXug=="; // shortened
+        string key = "";
+        string secret = "";
         string path = "api/3/order/list";
 
         long unixTimestamp = (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
