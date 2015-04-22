@@ -21,21 +21,21 @@ var client = new ANX(key, secret, "BTCUSD", 'https://anxpro.com');
 //    console.log(JSON.stringify(json,null,2));
 //});
 
-//// market order to buy fixed amount of BTC
+//// market order to buy fixed amount of 0.1 BTC
 //client.newMarketOrderFixedTradedAmount(true, "BTC", "USD", "0.1", function(err, json) {
 //     if (err) { throw JSON.stringify(err,null,3); }
 //     console.log("---------------Add:--------------");
 //     console.log(JSON.stringify(json,null,3));
 //});
 
-//// market order to buy fixed amount of USD
+//// market order to buy 5 USD worth of BTC
 //client.newMarketOrderFixedSettlementAmount(true, "BTC", "USD", "5", function(err, json) {
 //    if (err) { throw JSON.stringify(err,null,3); }
 //    console.log("---------------Add:--------------");
 //    console.log(JSON.stringify(json,null,3));
 //});
 
-//limit order to buy fixed amount of USD (you can fix traded or settlement) at limit price of 300 USD per BTC
+//limit order to buy 5 USD worth of BTC (you can fix traded or settlement) at limit price of 110 USD per BTC
 //client.newLimitOrderFixedSettlementAmount(true, "BTC", "USD", "5","110",function(err, json) {
 //    if (err) { throw JSON.stringify(err,null,3); }
 //    console.log("---------------Add:--------------");
