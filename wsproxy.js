@@ -11,10 +11,10 @@ var restClientCache = {};
 // create a socket.io topic to listen for incoming ws requests
 var ioServer = require('socket.io').listen(9990);
 var ioClientLib = require('socket.io-client');
-ioServer.set('log level', 1);
-ioServer.enable('browser client minification');  // send minified client
-ioServer.enable('browser client etag');          // apply etag caching logic based on version number
-ioServer.enable('browser client gzip');          // gzip the file
+//ioServer.set('log level', 1);
+//ioServer.enable('browser client minification');  // send minified client
+//ioServer.enable('browser client etag');          // apply etag caching logic based on version number
+//ioServer.enable('browser client gzip');          // gzip the file
 
 /**
  * Obtains a data token from the cache or from ANX via a rest call and invokes the callback when done
@@ -61,7 +61,7 @@ function doWithClientSocket(key,secret,callback) {
             } else {
                 var token = restClientWrapper.token;
                 var uuid = restClientWrapper.uuid;
-                var ioClient = ioClientLib.connect(host, {'force new connection': true, query: "token=" + token , resource: 'streaming/3'});
+                var ioClient = ioClientLib.connect(host, {'force new connection': true, query: "token=" + token , 'path': '/streaming/3'});
                 ioClient.on("error", function (error) {
                     console.log("connection error with client socket to ANX for key:" + key);
                     callback(null, error);
@@ -128,9 +128,17 @@ ioServer.on('connection', function (socket) {
 
                     //add to room to avoid all data going to all websocket clients
                     var sessionId = socket.id;
-                    var manager = ioServer.sockets.manager;
+                    var tmpSocket;
+                    for (var j = 0; j < ioServer.sockets.sockets; j += 1) {
+                        if (ioServer.sockets.sockets[i].id === socket.id) {
+                            if(!ioServer.sockets.in(topic)){
+                                tmpSocket = ioServer.sockets.sockets[i];
+                            }
+                        }
+                    }
+                    //var manager = ioServer.sockets.manager;
                     // avoid dup subscriptions most of the time (this is not synchronized so open to race condition
-                    if (! (manager.roomClients[sessionId])[topic])
+                    if (! (tmpSocket))
                     {
                         socket.join(topic);
                     }

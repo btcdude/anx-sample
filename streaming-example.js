@@ -25,7 +25,7 @@ rest_client.dataToken(function (err, json) {
     var uuid = json.uuid;
 
     // use token to get streaming connection
-    var server = io.connect(host, {resource: 'streaming/3'});
+    var server = io.connect(host, {path: '/streaming/3'});
 
     server.on('connect', function () {
         console.log("connected");
