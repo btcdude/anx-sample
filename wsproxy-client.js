@@ -24,7 +24,7 @@ server.on('connect', function () {
 //    // PUBLIC DATA
 
     // subscribe to ticks
-    //server.emit('subscribe', {secret: secret, key: key, topics: ['public/trades/ANX/BTCUSD', 'public/tick/ANX/BTCUSD', 'public/orderBook/ANX/BTCUSD']});
+    server.emit('subscribe', {secret: secret, key: key, topics: ['public/trades/ANX/BTCUSD', 'public/tick/ANX/BTCUSD', 'public/orderBook/ANX/BTCUSD']});
 
     // subscribe to private events - fills, order updates, and account balance updates (check the eventType field on the received message)
     // replace your main key and secret below with per client key and secret
