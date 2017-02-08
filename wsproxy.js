@@ -3,7 +3,7 @@
 // websocket proxy for the ANX restful and streaming API
 // underlying API's docmented at github.com/btcdude/anx , http://docs.anxv2.apiary.io/ and http://docs/anxv3.apiary.io/
 var ANX = require('anx');
-var host = "http://dev.anxpro.com";
+var host = "https://anxpro.com";
 
 var clientSocketCache = {};
 var restClientCache = {};
