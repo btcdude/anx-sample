@@ -3,7 +3,7 @@
 // websocket proxy for the ANX restful and streaming API
 // underlying API's docmented at github.com/btcdude/anx , http://docs.anxv2.apiary.io/ and http://docs/anxv3.apiary.io/
 var ANX = require('anx');
-var host = "https://anxpro.com";
+var host = "http://dev.anxpro.com";
 
 var clientSocketCache = {};
 var restClientCache = {};
@@ -126,19 +126,8 @@ ioServer.on('connection', function (socket) {
                     if (topic=='private') topic='private/'+uuid;
                     translatedTopics[i]=topic;
 
-                    //add to room to avoid all data going to all websocket clients
-                    var sessionId = socket.id;
-                    var tmpSocket;
-                    for (var j = 0; j < ioServer.sockets.sockets; j += 1) {
-                        if (ioServer.sockets.sockets[i].id === socket.id) {
-                            if(!ioServer.sockets.in(topic)){
-                                tmpSocket = ioServer.sockets.sockets[i];
-                            }
-                        }
-                    }
-                    //var manager = ioServer.sockets.manager;
                     // avoid dup subscriptions most of the time (this is not synchronized so open to race condition
-                    if (! (tmpSocket))
+                    if (! socket.rooms[topic])
                     {
                         socket.join(topic);
                     }
