@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "anx": "~0.1.0",
-    "socket.io-client": "~0.9.16",
-    "socket.io": "~0.9.16"
+    "socket.io-client": "1.4.5",
+    "socket.io": "1.4.5"
   },
   "keywords": [
     "anx",
